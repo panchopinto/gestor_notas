@@ -3,24 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BIOTEC · Gestión de Notas</title>
-  <meta name="description" content="Portal interno para notas procedimentales y actitudinales por curso, semestre y asignatura.">
+  <title>BIOTEC · Gestión de Notas v2</title>
+  <meta name="description" content="Portal interno para gestionar notas, pruebas ponderadas, observaciones y panel UTP por curso, asignatura y semestre.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand">
-        <div class="brand-badge">📘</div>
+        <div class="brand-badge">🧪</div>
         <div>
           <h1>BIOTEC · Gestión de Notas</h1>
-          <p>Notas procedimentales, actitudinales, observaciones y tablero UTP</p>
+          <p>Pruebas ponderadas, notas procedimentales, actitudinales y analítica UTP</p>
         </div>
       </div>
 
       <div class="top-actions">
         <div class="search-wrap">
-          <input id="globalSearch" type="search" placeholder="Buscar por RUT, apellido, correo o curso">
+          <input id="globalSearch" type="search" placeholder="Buscar por RUT, apellidos, correo o curso">
           <button id="globalSearchBtn" class="ghost-btn">Buscar</button>
         </div>
         <button id="accessibilityBtn" class="gear-btn" aria-expanded="false" aria-controls="accessibilityPanel" title="Accesibilidad">⚙️</button>
@@ -47,11 +47,12 @@
     <main class="main-grid">
       <section class="hero card">
         <div class="hero-copy">
-          <span class="eyebrow">Portal interno</span>
-          <h2>Un solo sitio para cursos, asignaturas, semestres y seguimiento integral</h2>
+          <span class="eyebrow">Portal interno BIOTEC</span>
+          <h2>Gestión integral de notas por curso, asignatura y semestre</h2>
           <p>
-            Consulta rápida para estudiantes, edición para docentes y analítica para UTP.
-            El padrón base fue cargado desde la nómina oficial adjunta.
+            Incluye Prueba 1 a Prueba 5 con ponderaciones configurables, exigencia manual,
+            cálculo de puntaje de aprobación, notas procedimentales, actitudinales, observaciones
+            y dashboard UTP por curso.
           </p>
           <div class="hero-actions">
             <button class="primary-btn" data-open="student">Ver notas de estudiante</button>
@@ -71,7 +72,7 @@
         <div class="tab-panel active" id="panel-student">
           <div class="section-head">
             <h3>Consulta individual</h3>
-            <p>Busca por RUT, apellidos o correo institucional para ver resultados por semestre.</p>
+            <p>Busca por RUT, apellidos o correo institucional para ver resultados por semestre, asignatura y detalle de pruebas.</p>
           </div>
           <div class="lookup-grid">
             <input id="studentQuery" type="search" placeholder="Ej.: 24882648-7 o ALMUNA o correo institucional">
@@ -82,14 +83,14 @@
           </div>
           <div id="studentLookupResults" class="result-list"></div>
           <div id="studentView" class="student-view empty-state">
-            <p>Selecciona un estudiante para ver notas procedimentales, actitudinales, promedios y observaciones.</p>
+            <p>Selecciona un estudiante para ver pruebas, ponderaciones, notas, promedios y observaciones.</p>
           </div>
         </div>
 
         <div class="tab-panel" id="panel-teacher">
           <div class="section-head">
             <h3>Acceso docente</h3>
-            <p>Ingreso interno para carga, edición, observaciones, exportación y panel UTP.</p>
+            <p>Ingreso interno para carga de pruebas, configuración de ponderaciones, observaciones y analítica.</p>
           </div>
           <form id="loginForm" class="login-form">
             <label>
@@ -103,8 +104,8 @@
             <button type="submit" class="primary-btn">Ingresar</button>
           </form>
           <div class="login-note">
-            <strong>Importante:</strong> al estar publicado como sitio estático, las credenciales y datos compartidos entre equipos no tienen seguridad real de servidor.
-            Está listo para GitHub, pero el siguiente paso recomendado es migrarlo a Supabase.
+            <strong>Estado actual:</strong> esta versión guarda cambios en el navegador para dejarlo listo y funcional en GitHub.
+            También se incluye carpeta <code>supabase/</code> con esquema base para migración multiusuario real.
           </div>
         </div>
       </section>
@@ -155,6 +156,10 @@
             <span id="teacherCourseMeta">Sin curso seleccionado</span>
           </div>
           <div class="tool-card">
+            <strong>Promedio académico</strong>
+            <span id="avgAcademic">—</span>
+          </div>
+          <div class="tool-card">
             <strong>Promedio procedimental</strong>
             <span id="avgProc">—</span>
           </div>
@@ -163,24 +168,49 @@
             <span id="avgAct">—</span>
           </div>
           <div class="tool-card">
-            <strong>Promedio final</strong>
-            <span id="avgFinal">—</span>
+            <strong>Promedio integral</strong>
+            <span id="avgIntegral">—</span>
           </div>
+        </div>
+
+        <div class="config-grid">
+          <section class="card-lite">
+            <div class="section-head compact">
+              <h3>Configuración de Prueba 1 a Prueba 5</h3>
+              <p>Define nombre, ponderación, exigencia y puntaje total por curso, semestre y asignatura.</p>
+            </div>
+            <div class="table-wrap tight">
+              <table class="config-table">
+                <thead>
+                  <tr>
+                    <th>Evaluación</th>
+                    <th>Ponderación %</th>
+                    <th>Exigencia %</th>
+                    <th>Puntaje total</th>
+                    <th>Puntaje aprobación</th>
+                  </tr>
+                </thead>
+                <tbody id="assessmentConfigBody"></tbody>
+              </table>
+            </div>
+            <div class="config-foot">
+              <div id="weightSummary" class="badge neutral">Ponderación total: 0%</div>
+              <button id="resetAssessmentsBtn" class="ghost-btn">Restablecer Prueba 1–5</button>
+            </div>
+          </section>
+
+          <section class="card-lite">
+            <div class="section-head compact">
+              <h3>Indicadores del bloque</h3>
+              <p>Vista rápida para revisar consistencia de la configuración actual.</p>
+            </div>
+            <div class="stats-list" id="assessmentMeta"></div>
+          </section>
         </div>
 
         <div class="table-wrap">
           <table class="grade-table">
-            <thead>
-              <tr>
-                <th>Estudiante</th>
-                <th>RUT</th>
-                <th>Correo</th>
-                <th>Procedimental</th>
-                <th>Actitudinal</th>
-                <th>Promedio</th>
-                <th>Observaciones</th>
-              </tr>
-            </thead>
+            <thead id="teacherTableHead"></thead>
             <tbody id="teacherTableBody"></tbody>
           </table>
         </div>
@@ -188,7 +218,7 @@
         <div id="utpDashboard" class="utp-dashboard">
           <div class="section-head">
             <h3>Dashboard UTP</h3>
-            <p>Promedios por curso, asignatura y semestre, con distribución de desempeño.</p>
+            <p>Promedios por curso, asignatura y semestre, más distribución de desempeño y aprobación.</p>
           </div>
           <div class="dashboard-grid">
             <div class="card-lite">
@@ -196,12 +226,16 @@
               <div id="dashboardSummary" class="stats-list"></div>
             </div>
             <div class="card-lite">
-              <h4>Promedios comparados</h4>
+              <h4>Promedios por asignatura</h4>
               <div id="barChart" class="simple-chart"></div>
             </div>
             <div class="card-lite">
-              <h4>Distribución de notas finales</h4>
+              <h4>Distribución integral</h4>
               <div id="distributionChart" class="simple-chart"></div>
+            </div>
+            <div class="card-lite">
+              <h4>Aprobación del curso</h4>
+              <div id="approvalChart" class="simple-chart"></div>
             </div>
           </div>
         </div>
@@ -209,7 +243,7 @@
         <div id="accountManager" class="account-manager hidden">
           <div class="section-head">
             <h3>Profesores autorizados</h3>
-            <p>Se guardan localmente en este navegador para facilitar futuras incorporaciones.</p>
+            <p>Puedes agregar más docentes para esta instalación. En la migración a Supabase esto pasará a ser multiusuario real.</p>
           </div>
           <form id="teacherAccountForm" class="account-form">
             <input id="newTeacherName" type="text" placeholder="Nombre">
@@ -227,25 +261,25 @@
 
       <section class="card suggestions">
         <div class="section-head">
-          <h3>Sugerencias ya implementadas</h3>
-          <p>Para que el sitio sea más útil desde el primer día.</p>
+          <h3>Lo nuevo en esta versión</h3>
+          <p>Enfoque pensado para BIOTEC y listo para evolucionar a Supabase.</p>
         </div>
         <div class="suggestion-grid">
           <article>
-            <strong>Respaldo e importación</strong>
-            <p>Los docentes pueden exportar e importar la base de notas en JSON.</p>
+            <strong>Pruebas ponderadas</strong>
+            <p>Cada asignatura maneja Prueba 1 a Prueba 5 con configuración independiente.</p>
           </article>
           <article>
-            <strong>Asignaturas personalizables</strong>
-            <p>Puedes agregar asignaturas por curso si luego aparecen nuevas necesidades.</p>
+            <strong>Exigencia y puntaje de aprobación</strong>
+            <p>El profesor define exigencia y puntaje total; el sistema calcula automáticamente el puntaje mínimo de aprobación.</p>
           </article>
           <article>
-            <strong>Dashboard UTP</strong>
-            <p>Incluye promedios y distribución de resultados del curso filtrado.</p>
+            <strong>Vista estudiante más completa</strong>
+            <p>Ahora muestra el detalle por prueba, puntaje, nota calculada y promedio académico e integral.</p>
           </article>
           <article>
-            <strong>Accesibilidad integrada</strong>
-            <p>Incluye tema, contraste, tamaño de texto, narrador y búsqueda rápida.</p>
+            <strong>Ruta a Supabase</strong>
+            <p>Se incluye esquema base para autenticación y almacenamiento institucional multiusuario.</p>
           </article>
         </div>
       </section>
@@ -256,22 +290,22 @@
         <strong>NeoTech EduLab</strong>
         <span>Uso interno · Plataforma base para seguimiento académico BIOTEC</span>
       </div>
-      <div class="footer-note">Recomendación técnica: migrar autenticación y datos a Supabase antes de un uso multiusuario real.</div>
+      <div class="footer-note">Incluye carpeta técnica para migración a Supabase.</div>
     </footer>
+
+    <dialog id="addSubjectDialog" class="dialog">
+      <form method="dialog" class="dialog-card">
+        <h3>Agregar asignatura</h3>
+        <p>Se agrega solo al curso seleccionado en este navegador.</p>
+        <input id="newSubjectName" type="text" placeholder="Ej.: Taller de laboratorio">
+        <div class="dialog-actions">
+          <button value="cancel" class="ghost-btn">Cancelar</button>
+          <button id="saveSubjectDialogBtn" value="default" class="primary-btn">Guardar</button>
+        </div>
+      </form>
+    </dialog>
   </div>
 
-  <dialog id="addSubjectDialog">
-    <form method="dialog" class="dialog-card">
-      <h3>Nueva asignatura</h3>
-      <p>Se agregará al curso seleccionado y quedará guardada localmente en este navegador.</p>
-      <input id="newSubjectName" type="text" placeholder="Ej.: Biotecnología Aplicada">
-      <div class="dialog-actions">
-        <button value="cancel" class="ghost-btn">Cancelar</button>
-        <button id="saveSubjectDialogBtn" value="default" class="primary-btn">Guardar</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script src="app.js" type="module"></script>
+  <script src="app.js"></script>
 </body>
 </html>
