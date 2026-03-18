@@ -28,16 +28,20 @@ Versión estática lista para publicar en GitHub Pages y conectar a una base rea
 - `supabase-config.js`: archivo real que debes completar antes de publicar.
 - `supabase/schema.sql`: estructura completa de la base.
 - `supabase/seed_catalog.sql`: cursos, asignaturas y relaciones curso-asignatura.
-- `supabase/seed_students.sql`: estudiantes y matrículas 2026.
+- `supabase/seed_students.sql`: estudiantes y matrículas 2026 en un solo archivo.
+- `supabase/seed_students_part1.sql`, `seed_students_part2.sql`, `seed_students_part3.sql`: versión dividida para SQL Editor.
 - `supabase/bootstrap_roles.sql`: promoción de Francisco y Belén a rol docente.
 
 ## Conexión rápida
 
 1. Crea un proyecto en Supabase.
-2. Abre el SQL Editor y ejecuta:
+2. Abre el SQL Editor y ejecuta en este orden:
    - `supabase/schema.sql`
    - `supabase/seed_catalog.sql`
-   - `supabase/seed_students.sql`
+   - `supabase/seed_students_part1.sql`
+   - `supabase/seed_students_part2.sql`
+   - `supabase/seed_students_part3.sql`
+   - (solo si usas conexión directa a la base, puedes usar `supabase/seed_students.sql` en vez de las partes)
 3. En Authentication > Users crea:
    - `franciscopinto@liceosannicolas.cl` con contraseña `Biotec2006.`
    - `belenacuna@liceosannicolas.cl` con contraseña `Biotec2006.`
@@ -80,3 +84,19 @@ La conversión usada deja:
 
 Esto se resuelve en la función SQL `public.grade_from_points()` y también se refleja en la interfaz.
 
+
+## Siguiente paso para conectar el frontend
+
+1. Ve a **Project Settings > API** en tu proyecto Supabase.
+2. Copia **Project URL** y **anon public key**.
+3. Abre `supabase-config.js` y reemplaza los valores vacíos.
+4. Publica el contenido del proyecto en GitHub Pages o Cloudflare Pages.
+5. Prueba login con los usuarios creados en Auth.
+
+### Contenido esperado de `supabase-config.js`
+
+```js
+window.SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
+window.SUPABASE_ANON_KEY = "TU_ANON_PUBLIC_KEY";
+window.BIOTEC_YEAR = 2026;
+```
