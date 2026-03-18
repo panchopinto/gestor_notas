@@ -180,8 +180,8 @@
           <section class="card-lite">
             <div class="section-head compact">
               <div>
-                <h3>Configuración Prueba 1 a Prueba 5</h3>
-                <p>Configura título, ponderación, exigencia, puntaje total y puntaje de aprobación calculado.</p>
+                <h3>Configuración de evaluaciones</h3>
+                <p>Configura Prueba 1 a Prueba 5 y agrega más evaluaciones cuando lo necesites.</p>
               </div>
             </div>
             <div class="table-wrap tight">
@@ -200,7 +200,10 @@
             </div>
             <div class="config-foot">
               <div id="weightSummary" class="badge neutral">Ponderación total: 0%</div>
-              <button id="saveAssessmentsBtn" class="primary-btn">Guardar configuración</button>
+              <div class="inline-actions">
+                <button id="addAssessmentBtn" class="secondary-btn" type="button">➕ Agregar prueba</button>
+                <button id="saveAssessmentsBtn" class="primary-btn" type="button">Guardar configuración</button>
+              </div>
             </div>
           </section>
 
@@ -214,6 +217,60 @@
             <div class="stats-list" id="assessmentMeta"></div>
           </section>
         </div>
+
+
+
+        <section class="card quick-entry-card">
+          <div class="section-head">
+            <div>
+              <h3>Ingreso rápido de notas 🎯</h3>
+              <p>Elige curso, asignatura y evaluación; luego busca al estudiante por RUT, apellidos o correo e ingresa su puntaje.</p>
+            </div>
+          </div>
+          <div class="quick-entry-grid">
+            <label>
+              <span>Evaluación</span>
+              <select id="quickAssessment"></select>
+            </label>
+            <label class="grow-2">
+              <span>Buscar estudiante</span>
+              <input id="quickStudentSearch" type="search" placeholder="RUT, apellidos o correo">
+            </label>
+            <label>
+              <span>Estudiante</span>
+              <select id="quickStudent"></select>
+            </label>
+            <label>
+              <span>Puntaje obtenido</span>
+              <input id="quickScore" type="number" step="0.1" min="0" placeholder="Ej.: 34">
+            </label>
+            <label>
+              <span>Puntaje total</span>
+              <input id="quickTotalPoints" type="number" step="0.1" min="1" placeholder="Ej.: 40">
+            </label>
+            <label>
+              <span>Ponderación %</span>
+              <input id="quickWeightPct" type="number" step="0.1" min="0" max="100" placeholder="Ej.: 20">
+            </label>
+            <label>
+              <span>Exigencia %</span>
+              <input id="quickRequirementPct" type="number" step="0.1" min="1" max="100" placeholder="Ej.: 60">
+            </label>
+            <div class="quick-meta">
+              <div class="tool-card compact">
+                <strong>Puntaje aprobación</strong>
+                <span id="quickPassingPoints">—</span>
+              </div>
+              <div class="tool-card compact">
+                <strong>Nota estimada</strong>
+                <span id="quickEstimatedGrade">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="inline-actions">
+            <button id="quickSaveBtn" class="primary-btn" type="button">💾 Guardar nota</button>
+          </div>
+        </section>
 
         <div class="table-wrap">
           <table class="grade-table">
