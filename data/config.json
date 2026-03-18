@@ -1,0 +1,18 @@
+{
+  "appName": "BIOTEC · Gestión de Notas",
+  "institution": "Liceo Bicentenario de Excelencia Polivalente San Nicolás",
+  "teacherAccounts": [
+    {
+      "email": "franciscopinto@liceosannicolas.cl",
+      "password": "Biotec2006.",
+      "role": "admin",
+      "name": "Francisco Pinto"
+    },
+    {
+      "email": "belenacuna@liceosannicolas.cl",
+      "password": "Biotec2006.",
+      "role": "teacher",
+      "name": "Belén Acuña"
+    }
+  ]
+}

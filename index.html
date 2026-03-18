@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BIOTEC · Gestión de Notas</title>
+  <meta name="description" content="Portal interno para notas procedimentales y actitudinales por curso, semestre y asignatura.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-badge">📘</div>
+        <div>
+          <h1>BIOTEC · Gestión de Notas</h1>
+          <p>Notas procedimentales, actitudinales, observaciones y tablero UTP</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <div class="search-wrap">
+          <input id="globalSearch" type="search" placeholder="Buscar por RUT, apellido, correo o curso">
+          <button id="globalSearchBtn" class="ghost-btn">Buscar</button>
+        </div>
+        <button id="accessibilityBtn" class="gear-btn" aria-expanded="false" aria-controls="accessibilityPanel" title="Accesibilidad">⚙️</button>
+      </div>
+    </header>
+
+    <aside id="accessibilityPanel" class="accessibility-panel hidden" aria-hidden="true">
+      <div class="panel-title">
+        <span>🪻</span>
+        <div>
+          <strong>Accesibilidad</strong>
+          <p>Lectura, tamaño de texto, contraste y búsqueda rápida.</p>
+        </div>
+      </div>
+      <button data-action="home">🏠 <span>Inicio</span></button>
+      <button data-action="narrator">🗣️ <span>Narrador</span></button>
+      <button data-action="theme">🌓 <span>Tema claro / oscuro</span></button>
+      <button data-action="contrast">HC <span>Alto contraste</span></button>
+      <button data-action="font-up">A+ <span>Aumentar texto</span></button>
+      <button data-action="font-down">A− <span>Reducir texto</span></button>
+      <button data-action="find">🔎 <span>Buscar en la página</span></button>
+    </aside>
+
+    <main class="main-grid">
+      <section class="hero card">
+        <div class="hero-copy">
+          <span class="eyebrow">Portal interno</span>
+          <h2>Un solo sitio para cursos, asignaturas, semestres y seguimiento integral</h2>
+          <p>
+            Consulta rápida para estudiantes, edición para docentes y analítica para UTP.
+            El padrón base fue cargado desde la nómina oficial adjunta.
+          </p>
+          <div class="hero-actions">
+            <button class="primary-btn" data-open="student">Ver notas de estudiante</button>
+            <button class="secondary-btn" data-open="teacher">Ingresar como profesor / UTP</button>
+          </div>
+          <div id="datasetBadge" class="dataset-badge">Cargando datos…</div>
+        </div>
+        <div class="hero-stats" id="heroStats"></div>
+      </section>
+
+      <section class="login-zone card">
+        <div class="tabs" role="tablist" aria-label="Vistas">
+          <button class="tab active" data-tab="student">Vista estudiante</button>
+          <button class="tab" data-tab="teacher">Vista profesor / UTP</button>
+        </div>
+
+        <div class="tab-panel active" id="panel-student">
+          <div class="section-head">
+            <h3>Consulta individual</h3>
+            <p>Busca por RUT, apellidos o correo institucional para ver resultados por semestre.</p>
+          </div>
+          <div class="lookup-grid">
+            <input id="studentQuery" type="search" placeholder="Ej.: 24882648-7 o ALMUNA o correo institucional">
+            <select id="studentCourseFilter">
+              <option value="">Todos los cursos</option>
+            </select>
+            <button id="studentLookupBtn" class="primary-btn">Buscar estudiante</button>
+          </div>
+          <div id="studentLookupResults" class="result-list"></div>
+          <div id="studentView" class="student-view empty-state">
+            <p>Selecciona un estudiante para ver notas procedimentales, actitudinales, promedios y observaciones.</p>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="panel-teacher">
+          <div class="section-head">
+            <h3>Acceso docente</h3>
+            <p>Ingreso interno para carga, edición, observaciones, exportación y panel UTP.</p>
+          </div>
+          <form id="loginForm" class="login-form">
+            <label>
+              <span>Correo institucional</span>
+              <input id="loginEmail" type="email" required placeholder="nombre@liceosannicolas.cl">
+            </label>
+            <label>
+              <span>Contraseña</span>
+              <input id="loginPassword" type="password" required placeholder="Contraseña">
+            </label>
+            <button type="submit" class="primary-btn">Ingresar</button>
+          </form>
+          <div class="login-note">
+            <strong>Importante:</strong> al estar publicado como sitio estático, las credenciales y datos compartidos entre equipos no tienen seguridad real de servidor.
+            Está listo para GitHub, pero el siguiente paso recomendado es migrarlo a Supabase.
+          </div>
+        </div>
+      </section>
+
+      <section id="teacherWorkspace" class="card hidden">
+        <div class="workspace-head">
+          <div>
+            <span class="eyebrow">Panel docente</span>
+            <h3 id="sessionTitle">Sesión iniciada</h3>
+            <p id="sessionMeta">Carga, edición y análisis.</p>
+          </div>
+          <div class="workspace-actions">
+            <button id="backupExportBtn" class="ghost-btn">Exportar respaldo JSON</button>
+            <label class="ghost-btn file-btn">
+              Importar respaldo
+              <input id="backupImportInput" type="file" accept=".json" hidden>
+            </label>
+            <button id="logoutBtn" class="danger-btn">Cerrar sesión</button>
+          </div>
+        </div>
+
+        <div class="teacher-filters">
+          <label>
+            <span>Curso</span>
+            <select id="teacherCourse"></select>
+          </label>
+          <label>
+            <span>Semestre</span>
+            <select id="teacherSemester">
+              <option value="1">1° semestre</option>
+              <option value="2">2° semestre</option>
+            </select>
+          </label>
+          <label>
+            <span>Asignatura</span>
+            <select id="teacherSubject"></select>
+          </label>
+          <label class="grow">
+            <span>Buscar estudiante</span>
+            <input id="teacherStudentFilter" type="search" placeholder="RUT, nombre, apellido o correo">
+          </label>
+          <button id="addSubjectBtn" class="secondary-btn">+ Agregar asignatura</button>
+        </div>
+
+        <div class="teacher-tools">
+          <div class="tool-card">
+            <strong>Curso seleccionado</strong>
+            <span id="teacherCourseMeta">Sin curso seleccionado</span>
+          </div>
+          <div class="tool-card">
+            <strong>Promedio procedimental</strong>
+            <span id="avgProc">—</span>
+          </div>
+          <div class="tool-card">
+            <strong>Promedio actitudinal</strong>
+            <span id="avgAct">—</span>
+          </div>
+          <div class="tool-card">
+            <strong>Promedio final</strong>
+            <span id="avgFinal">—</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="grade-table">
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                <th>RUT</th>
+                <th>Correo</th>
+                <th>Procedimental</th>
+                <th>Actitudinal</th>
+                <th>Promedio</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="teacherTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="utpDashboard" class="utp-dashboard">
+          <div class="section-head">
+            <h3>Dashboard UTP</h3>
+            <p>Promedios por curso, asignatura y semestre, con distribución de desempeño.</p>
+          </div>
+          <div class="dashboard-grid">
+            <div class="card-lite">
+              <h4>Resumen general</h4>
+              <div id="dashboardSummary" class="stats-list"></div>
+            </div>
+            <div class="card-lite">
+              <h4>Promedios comparados</h4>
+              <div id="barChart" class="simple-chart"></div>
+            </div>
+            <div class="card-lite">
+              <h4>Distribución de notas finales</h4>
+              <div id="distributionChart" class="simple-chart"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="accountManager" class="account-manager hidden">
+          <div class="section-head">
+            <h3>Profesores autorizados</h3>
+            <p>Se guardan localmente en este navegador para facilitar futuras incorporaciones.</p>
+          </div>
+          <form id="teacherAccountForm" class="account-form">
+            <input id="newTeacherName" type="text" placeholder="Nombre">
+            <input id="newTeacherEmail" type="email" placeholder="Correo institucional">
+            <input id="newTeacherPassword" type="text" placeholder="Contraseña">
+            <select id="newTeacherRole">
+              <option value="teacher">Profesor</option>
+              <option value="admin">UTP / Admin</option>
+            </select>
+            <button type="submit" class="primary-btn">Agregar profesor</button>
+          </form>
+          <div id="teacherAccountList" class="account-list"></div>
+        </div>
+      </section>
+
+      <section class="card suggestions">
+        <div class="section-head">
+          <h3>Sugerencias ya implementadas</h3>
+          <p>Para que el sitio sea más útil desde el primer día.</p>
+        </div>
+        <div class="suggestion-grid">
+          <article>
+            <strong>Respaldo e importación</strong>
+            <p>Los docentes pueden exportar e importar la base de notas en JSON.</p>
+          </article>
+          <article>
+            <strong>Asignaturas personalizables</strong>
+            <p>Puedes agregar asignaturas por curso si luego aparecen nuevas necesidades.</p>
+          </article>
+          <article>
+            <strong>Dashboard UTP</strong>
+            <p>Incluye promedios y distribución de resultados del curso filtrado.</p>
+          </article>
+          <article>
+            <strong>Accesibilidad integrada</strong>
+            <p>Incluye tema, contraste, tamaño de texto, narrador y búsqueda rápida.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div>
+        <strong>NeoTech EduLab</strong>
+        <span>Uso interno · Plataforma base para seguimiento académico BIOTEC</span>
+      </div>
+      <div class="footer-note">Recomendación técnica: migrar autenticación y datos a Supabase antes de un uso multiusuario real.</div>
+    </footer>
+  </div>
+
+  <dialog id="addSubjectDialog">
+    <form method="dialog" class="dialog-card">
+      <h3>Nueva asignatura</h3>
+      <p>Se agregará al curso seleccionado y quedará guardada localmente en este navegador.</p>
+      <input id="newSubjectName" type="text" placeholder="Ej.: Biotecnología Aplicada">
+      <div class="dialog-actions">
+        <button value="cancel" class="ghost-btn">Cancelar</button>
+        <button id="saveSubjectDialogBtn" value="default" class="primary-btn">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
