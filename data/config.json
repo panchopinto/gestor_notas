@@ -1,6 +1,11 @@
 {
   "appName": "BIOTEC · Gestión de Notas",
   "institution": "Liceo Bicentenario de Excelencia Polivalente San Nicolás",
+  "mode": "local",
+  "supabase": {
+    "url": "",
+    "anonKey": ""
+  },
   "teacherAccounts": [
     {
       "email": "franciscopinto@liceosannicolas.cl",
