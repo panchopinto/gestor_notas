@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BIOTEC · Gestión de Notas v2</title>
-  <meta name="description" content="Portal interno para gestionar notas, pruebas ponderadas, observaciones y panel UTP por curso, asignatura y semestre.">
+  <title>BIOTEC · Notas Supabase</title>
+  <meta name="description" content="Portal interno BIOTEC para gestión de notas procedimentales, actitudinales y pruebas ponderadas con Supabase.">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,8 +14,8 @@
       <div class="brand">
         <div class="brand-badge">🧪</div>
         <div>
-          <h1>BIOTEC · Gestión de Notas</h1>
-          <p>Pruebas ponderadas, notas procedimentales, actitudinales y analítica UTP</p>
+          <h1>BIOTEC · Notas institucionales</h1>
+          <p>Supabase real · Profesor · UTP · Vista estudiante · Analítica por curso, asignatura y semestre</p>
         </div>
       </div>
 
@@ -44,21 +45,22 @@
       <button data-action="find">🔎 <span>Buscar en la página</span></button>
     </aside>
 
+    <div id="configBanner" class="config-banner hidden"></div>
+
     <main class="main-grid">
       <section class="hero card">
         <div class="hero-copy">
-          <span class="eyebrow">Portal interno BIOTEC</span>
-          <h2>Gestión integral de notas por curso, asignatura y semestre</h2>
+          <span class="eyebrow">Versión lista para conectar</span>
+          <h2>Notas por curso, asignatura, semestre y evaluación</h2>
           <p>
-            Incluye Prueba 1 a Prueba 5 con ponderaciones configurables, exigencia manual,
-            cálculo de puntaje de aprobación, notas procedimentales, actitudinales, observaciones
-            y dashboard UTP por curso.
+            Gestiona Prueba 1 a Prueba 5 con ponderaciones, exigencia, puntaje total, puntaje de aprobación,
+            cálculo automático de nota 1.0 a 7.0, registro procedimental, actitudinal, observaciones y dashboard UTP.
           </p>
           <div class="hero-actions">
             <button class="primary-btn" data-open="student">Ver notas de estudiante</button>
             <button class="secondary-btn" data-open="teacher">Ingresar como profesor / UTP</button>
           </div>
-          <div id="datasetBadge" class="dataset-badge">Cargando datos…</div>
+          <div id="datasetBadge" class="dataset-badge">Conectando con Supabase…</div>
         </div>
         <div class="hero-stats" id="heroStats"></div>
       </section>
@@ -71,11 +73,13 @@
 
         <div class="tab-panel active" id="panel-student">
           <div class="section-head">
-            <h3>Consulta individual</h3>
-            <p>Busca por RUT, apellidos o correo institucional para ver resultados por semestre, asignatura y detalle de pruebas.</p>
+            <div>
+              <h3>Consulta individual</h3>
+              <p>Busca por RUT, apellidos o correo institucional para ver resultados por semestre, asignatura y detalle de pruebas.</p>
+            </div>
           </div>
           <div class="lookup-grid">
-            <input id="studentQuery" type="search" placeholder="Ej.: 24882648-7 o ALMUNA o correo institucional">
+            <input id="studentQuery" type="search" placeholder="Ej.: 24882648-7, ALMUNA o correo institucional">
             <select id="studentCourseFilter">
               <option value="">Todos los cursos</option>
             </select>
@@ -89,8 +93,10 @@
 
         <div class="tab-panel" id="panel-teacher">
           <div class="section-head">
-            <h3>Acceso docente</h3>
-            <p>Ingreso interno para carga de pruebas, configuración de ponderaciones, observaciones y analítica.</p>
+            <div>
+              <h3>Acceso docente</h3>
+              <p>Ingreso institucional con Supabase Auth. La interfaz asume que el usuario ya fue creado en Authentication.</p>
+            </div>
           </div>
           <form id="loginForm" class="login-form">
             <label>
@@ -104,8 +110,9 @@
             <button type="submit" class="primary-btn">Ingresar</button>
           </form>
           <div class="login-note">
-            <strong>Estado actual:</strong> esta versión guarda cambios en el navegador para dejarlo listo y funcional en GitHub.
-            También se incluye carpeta <code>supabase/</code> con esquema base para migración multiusuario real.
+            <strong>Credenciales base esperadas:</strong>
+            franciscopinto@liceosannicolas.cl y belenacuna@liceosannicolas.cl con contraseña inicial
+            <code>Biotec2006.</code> una vez creados en Supabase Auth y promovidos a rol docente.
           </div>
         </div>
       </section>
@@ -113,16 +120,12 @@
       <section id="teacherWorkspace" class="card hidden">
         <div class="workspace-head">
           <div>
-            <span class="eyebrow">Panel docente</span>
+            <span class="eyebrow">Panel docente / UTP</span>
             <h3 id="sessionTitle">Sesión iniciada</h3>
-            <p id="sessionMeta">Carga, edición y análisis.</p>
+            <p id="sessionMeta">Carga, edición y análisis en tiempo real con Supabase.</p>
           </div>
           <div class="workspace-actions">
-            <button id="backupExportBtn" class="ghost-btn">Exportar respaldo JSON</button>
-            <label class="ghost-btn file-btn">
-              Importar respaldo
-              <input id="backupImportInput" type="file" accept=".json" hidden>
-            </label>
+            <button id="refreshBtn" class="ghost-btn">Actualizar</button>
             <button id="logoutBtn" class="danger-btn">Cerrar sesión</button>
           </div>
         </div>
@@ -176,8 +179,10 @@
         <div class="config-grid">
           <section class="card-lite">
             <div class="section-head compact">
-              <h3>Configuración de Prueba 1 a Prueba 5</h3>
-              <p>Define nombre, ponderación, exigencia y puntaje total por curso, semestre y asignatura.</p>
+              <div>
+                <h3>Configuración Prueba 1 a Prueba 5</h3>
+                <p>Configura título, ponderación, exigencia, puntaje total y puntaje de aprobación calculado.</p>
+              </div>
             </div>
             <div class="table-wrap tight">
               <table class="config-table">
@@ -195,14 +200,16 @@
             </div>
             <div class="config-foot">
               <div id="weightSummary" class="badge neutral">Ponderación total: 0%</div>
-              <button id="resetAssessmentsBtn" class="ghost-btn">Restablecer Prueba 1–5</button>
+              <button id="saveAssessmentsBtn" class="primary-btn">Guardar configuración</button>
             </div>
           </section>
 
           <section class="card-lite">
             <div class="section-head compact">
-              <h3>Indicadores del bloque</h3>
-              <p>Vista rápida para revisar consistencia de la configuración actual.</p>
+              <div>
+                <h3>Indicadores del bloque</h3>
+                <p>Verifica consistencia antes de cargar resultados.</p>
+              </div>
             </div>
             <div class="stats-list" id="assessmentMeta"></div>
           </section>
@@ -217,95 +224,54 @@
 
         <div id="utpDashboard" class="utp-dashboard">
           <div class="section-head">
-            <h3>Dashboard UTP</h3>
-            <p>Promedios por curso, asignatura y semestre, más distribución de desempeño y aprobación.</p>
+            <div>
+              <h3>Dashboard UTP</h3>
+              <p>Promedios, distribución y alertas del bloque seleccionado.</p>
+            </div>
           </div>
           <div class="dashboard-grid">
-            <div class="card-lite">
-              <h4>Resumen general</h4>
-              <div id="dashboardSummary" class="stats-list"></div>
-            </div>
-            <div class="card-lite">
-              <h4>Promedios por asignatura</h4>
-              <div id="barChart" class="simple-chart"></div>
-            </div>
-            <div class="card-lite">
-              <h4>Distribución integral</h4>
-              <div id="distributionChart" class="simple-chart"></div>
-            </div>
-            <div class="card-lite">
-              <h4>Aprobación del curso</h4>
-              <div id="approvalChart" class="simple-chart"></div>
-            </div>
+            <section class="card-lite">
+              <h4>Promedios del curso</h4>
+              <div class="simple-chart" id="avgBars"></div>
+            </section>
+            <section class="card-lite">
+              <h4>Distribución de rendimiento</h4>
+              <canvas id="distributionChart" height="260"></canvas>
+            </section>
           </div>
-        </div>
-
-        <div id="accountManager" class="account-manager hidden">
-          <div class="section-head">
-            <h3>Profesores autorizados</h3>
-            <p>Puedes agregar más docentes para esta instalación. En la migración a Supabase esto pasará a ser multiusuario real.</p>
-          </div>
-          <form id="teacherAccountForm" class="account-form">
-            <input id="newTeacherName" type="text" placeholder="Nombre">
-            <input id="newTeacherEmail" type="email" placeholder="Correo institucional">
-            <input id="newTeacherPassword" type="text" placeholder="Contraseña">
-            <select id="newTeacherRole">
-              <option value="teacher">Profesor</option>
-              <option value="admin">UTP / Admin</option>
-            </select>
-            <button type="submit" class="primary-btn">Agregar profesor</button>
-          </form>
-          <div id="teacherAccountList" class="account-list"></div>
-        </div>
-      </section>
-
-      <section class="card suggestions">
-        <div class="section-head">
-          <h3>Lo nuevo en esta versión</h3>
-          <p>Enfoque pensado para BIOTEC y listo para evolucionar a Supabase.</p>
-        </div>
-        <div class="suggestion-grid">
-          <article>
-            <strong>Pruebas ponderadas</strong>
-            <p>Cada asignatura maneja Prueba 1 a Prueba 5 con configuración independiente.</p>
-          </article>
-          <article>
-            <strong>Exigencia y puntaje de aprobación</strong>
-            <p>El profesor define exigencia y puntaje total; el sistema calcula automáticamente el puntaje mínimo de aprobación.</p>
-          </article>
-          <article>
-            <strong>Vista estudiante más completa</strong>
-            <p>Ahora muestra el detalle por prueba, puntaje, nota calculada y promedio académico e integral.</p>
-          </article>
-          <article>
-            <strong>Ruta a Supabase</strong>
-            <p>Se incluye esquema base para autenticación y almacenamiento institucional multiusuario.</p>
-          </article>
+          <div class="suggestion-grid" id="suggestions"></div>
         </div>
       </section>
     </main>
 
     <footer class="footer">
       <div>
-        <strong>NeoTech EduLab</strong>
-        <span>Uso interno · Plataforma base para seguimiento académico BIOTEC</span>
+        <strong>NeoTech EduLab · BIOTEC</strong>
+        <span>Portal interno de notas con enfoque accesible, moderno y listo para GitHub Pages + Supabase.</span>
       </div>
-      <div class="footer-note">Incluye carpeta técnica para migración a Supabase.</div>
+      <div class="footer-right">
+        <span>Diseñado para profesores, estudiantes y UTP</span>
+      </div>
     </footer>
-
-    <dialog id="addSubjectDialog" class="dialog">
-      <form method="dialog" class="dialog-card">
-        <h3>Agregar asignatura</h3>
-        <p>Se agrega solo al curso seleccionado en este navegador.</p>
-        <input id="newSubjectName" type="text" placeholder="Ej.: Taller de laboratorio">
-        <div class="dialog-actions">
-          <button value="cancel" class="ghost-btn">Cancelar</button>
-          <button id="saveSubjectDialogBtn" value="default" class="primary-btn">Guardar</button>
-        </div>
-      </form>
-    </dialog>
   </div>
 
+  <dialog id="subjectDialog" class="dialog">
+    <form method="dialog" class="card dialog-card" id="subjectForm">
+      <h3>Agregar asignatura al curso</h3>
+      <label>
+        <span>Nombre de asignatura</span>
+        <input id="newSubjectName" required placeholder="Ej.: Biotecnología">
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="ghost-btn" id="cancelSubjectBtn">Cancelar</button>
+        <button type="submit" class="primary-btn">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

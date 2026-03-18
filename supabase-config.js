@@ -1,0 +1,3 @@
+window.SUPABASE_URL = "https://ziwqatfqeknvngrvwojj.supabase.co";
+window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inppd3FhdGZxZWtudm5ncnZ3b2pqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NTkyNjUsImV4cCI6MjA4OTQzNTI2NX0.RKq9z1ioHChj0PdzhKQE9jD6iA_r4fOVRUMWi6Pl_qA";
+window.BIOTEC_YEAR = 2026;
