@@ -133,6 +133,42 @@ function integralAverage(academic, proc, act) {
   return Math.round((values.reduce((a,b)=>a+b,0) / values.length) * 10) / 10;
 }
 
+function attitudinalValueFromCode(code) {
+  const normalized = (code || '').toString().trim().toUpperCase();
+  if (normalized === 'S') return 1;
+  if (normalized === 'GM') return 0.5;
+  if (normalized === 'N') return 0;
+  return null;
+}
+
+function attitudinalCodeFromValue(value) {
+  const n = Number(value);
+  if (n === 1) return 'S';
+  if (n === 0.5) return 'GM';
+  if (n === 0) return 'N';
+  return '';
+}
+
+function subjectEmoji(name = '') {
+  const key = normalizeText(name);
+  if (key.includes('mat')) return '📐';
+  if (key.includes('leng') || key.includes('comun')) return '📚';
+  if (key.includes('hist') || key.includes('geo')) return '🏛️';
+  if (key.includes('cien') || key.includes('bio') || key.includes('quim') || key.includes('fis')) return '🧪';
+  if (key.includes('ingl')) return '🌍';
+  if (key.includes('arte') || key.includes('mus')) return '🎨';
+  if (key.includes('ed fis') || key.includes('educacion fis') || key.includes('deporte')) return '⚽';
+  if (key.includes('tecno')) return '💻';
+  return '📝';
+}
+
+function subjectToneClass(name = '') {
+  const tones = ['tone-a','tone-b','tone-c','tone-d','tone-e','tone-f'];
+  let sum = 0;
+  for (const ch of name) sum += ch.charCodeAt(0);
+  return tones[sum % tones.length];
+}
+
 function applyAccessibility() {
   document.documentElement.dataset.theme = state.accessibility.theme;
   document.documentElement.style.fontSize = `${state.accessibility.fontScale * 100}%`;
@@ -205,18 +241,20 @@ function buildSupabaseClient() {
 async function loadHeroStats() {
   if (!state.supabase) return;
   const year = window.BIOTEC_YEAR || 2026;
-  const [{ count: studentCount }, { count: courseCount }, { count: subjectCount }] = await Promise.all([
+  const [{ count: studentCount }, coursesRes, { count: subjectCount }, { count: enrollmentCount }] = await Promise.all([
     state.supabase.from('students').select('*', { count: 'exact', head: true }),
     state.supabase.from('courses').select('*', { count: 'exact', head: true }).eq('school_year', year),
-    state.supabase.from('subjects').select('*', { count: 'exact', head: true })
+    state.supabase.from('subjects').select('*', { count: 'exact', head: true }),
+    state.supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('school_year', year)
   ]);
+  const courseCount = coursesRes.count ?? 0;
   dom.heroStats.innerHTML = [
     statCard(studentCount ?? 0, 'Estudiantes cargados'),
-    statCard(courseCount ?? 0, 'Cursos 2026'),
-    statCard(subjectCount ?? 0, 'Asignaturas base'),
-    statCard('1-7', 'Escala de notas')
+    statCard(courseCount, 'Cursos 2026'),
+    statCard(enrollmentCount ?? 0, 'Matrículas 2026'),
+    statCard(subjectCount ?? 0, 'Asignaturas base')
   ].join('');
-  dom.datasetBadge.textContent = `Base conectada · ${studentCount ?? 0} estudiantes · ${courseCount ?? 0} cursos`;
+  dom.datasetBadge.textContent = `Base conectada · ${studentCount ?? 0} estudiantes · ${courseCount} cursos · ${enrollmentCount ?? 0} matrículas`;
 }
 
 function statCard(value, label) {
@@ -225,11 +263,11 @@ function statCard(value, label) {
 
 async function loadCourses() {
   const year = window.BIOTEC_YEAR || 2026;
-  const { data, error } = await state.supabase
-    .from('courses')
-    .select('*')
-    .eq('school_year', year)
-    .order('name');
+  let query = state.supabase.from('courses').select('*');
+  let { data, error } = await query.eq('school_year', year).order('name');
+  if (error) {
+    ({ data, error } = await state.supabase.from('courses').select('*').order('name'));
+  }
   if (error) throw error;
   state.courses = data || [];
   const options = [`<option value="">Selecciona curso</option>`]
@@ -245,16 +283,39 @@ async function loadCourseSubjects(courseId) {
     dom.teacherSubject.innerHTML = '<option value="">Selecciona asignatura</option>';
     return;
   }
-  const { data, error } = await state.supabase
+  let { data, error } = await state.supabase
     .from('course_subjects')
     .select('id, course_id, subject_id, active, subjects(id, name)')
     .eq('course_id', courseId)
     .eq('active', true)
     .order('subject_id');
   if (error) throw error;
+
+  if (!data?.length) {
+    const { data: subjects, error: subjectError } = await state.supabase
+      .from('subjects')
+      .select('id, name')
+      .order('name');
+    if (subjectError) throw subjectError;
+    const seedLinks = (subjects || []).map(subject => ({ course_id: courseId, subject_id: subject.id, active: true }));
+    if (seedLinks.length) {
+      const { error: seedError } = await state.supabase
+        .from('course_subjects')
+        .upsert(seedLinks, { onConflict: 'course_id,subject_id' });
+      if (seedError) throw seedError;
+      ({ data, error } = await state.supabase
+        .from('course_subjects')
+        .select('id, course_id, subject_id, active, subjects(id, name)')
+        .eq('course_id', courseId)
+        .eq('active', true)
+        .order('subject_id'));
+      if (error) throw error;
+    }
+  }
+
   state.courseSubjects = data || [];
   dom.teacherSubject.innerHTML = `<option value="">Selecciona asignatura</option>` + state.courseSubjects
-    .map(x => `<option value="${x.id}">${x.subjects?.name || 'Sin nombre'}</option>`)
+    .map(x => `<option value="${x.id}">${subjectEmoji(x.subjects?.name || '')} ${x.subjects?.name || 'Sin nombre'}</option>`)
     .join('');
 }
 
@@ -337,18 +398,47 @@ async function loadRoster() {
   }
   state.currentCourseId = courseId;
   const year = window.BIOTEC_YEAR || 2026;
-  const { data, error } = await state.supabase
+  let roster = [];
+  let { data, error } = await state.supabase
     .from('enrollments')
     .select('student_id, students(id, rut, email, first_names, last_name_1, last_name_2, full_name), courses(name)')
     .eq('course_id', courseId)
     .eq('school_year', year)
     .order('student_id');
-  if (error) throw error;
-  state.roster = (data || []).map(item => ({
-    student_id: item.student_id,
-    course_name: item.courses?.name || '',
-    ...(item.students || {})
-  }));
+
+  if (!error) {
+    roster = (data || []).map(item => ({
+      student_id: item.student_id,
+      course_name: item.courses?.name || '',
+      ...(item.students || {})
+    }));
+  }
+
+  if (error || !roster.length) {
+    const { data: enrollments, error: e2 } = await state.supabase
+      .from('enrollments')
+      .select('student_id, course_id, school_year')
+      .eq('course_id', courseId)
+      .eq('school_year', year)
+      .order('student_id');
+    if (e2) throw (error || e2);
+    const studentIds = (enrollments || []).map(r => r.student_id);
+    const [{ data: students, error: s2 }, { data: courses }] = await Promise.all([
+      studentIds.length
+        ? state.supabase.from('students').select('id, rut, email, first_names, last_name_1, last_name_2, full_name').in('id', studentIds).order('full_name')
+        : Promise.resolve({ data: [], error: null }),
+      state.supabase.from('courses').select('id, name').eq('id', courseId).maybeSingle()
+    ]);
+    if (s2) throw s2;
+    const map = new Map((students || []).map(st => [st.id, st]));
+    roster = (enrollments || []).map(enr => ({
+      student_id: enr.student_id,
+      course_name: courses?.name || '',
+      ...(map.get(enr.student_id) || {})
+    }));
+  }
+
+  state.roster = roster;
   dom.teacherCourseMeta.textContent = `${state.roster.length} estudiantes en ${state.roster[0]?.course_name || 'curso seleccionado'}`;
   await loadExistingScoresAndNotes();
   renderTeacherTable();
@@ -438,7 +528,15 @@ function renderTeacherTable() {
           `;
         }).join('')}
         <td><input type="number" step="0.1" min="1" max="7" data-kind="procedural_grade" data-student-id="${student.id}" value="${note.procedural_grade ?? ''}"></td>
-        <td><input type="number" step="0.1" min="1" max="7" data-kind="attitudinal_grade" data-student-id="${student.id}" value="${note.attitudinal_grade ?? ''}"></td>
+        <td>
+          <select data-kind="attitudinal_grade" data-student-id="${student.id}" class="attitude-select">
+            <option value="">—</option>
+            <option value="S" ${attitudinalCodeFromValue(note.attitudinal_grade) === 'S' ? 'selected' : ''}>S</option>
+            <option value="GM" ${attitudinalCodeFromValue(note.attitudinal_grade) === 'GM' ? 'selected' : ''}>GM</option>
+            <option value="N" ${attitudinalCodeFromValue(note.attitudinal_grade) === 'N' ? 'selected' : ''}>N</option>
+          </select>
+          <small class="inline-help">S=1 · GM=0,5 · N=0</small>
+        </td>
         <td><span class="badge ${academic >= 4 ? 'ok' : 'warn'}">${academic ? academic.toFixed(1) : '—'}</span></td>
         <td><span class="badge ${integral >= 4 ? 'ok' : 'warn'}">${integral ? integral.toFixed(1) : '—'}</span></td>
         <td><textarea rows="2" data-kind="observation" data-student-id="${student.id}" placeholder="Observaciones">${note.observation || ''}</textarea></td>
@@ -472,7 +570,13 @@ async function saveNote(studentId, kind, value) {
     course_subject_id: state.currentCourseSubjectId,
     semester: state.currentSemester
   };
-  current[kind] = kind === 'observation' ? value : (value === '' ? null : Number(value));
+  if (kind === 'observation') {
+    current[kind] = value;
+  } else if (kind === 'attitudinal_grade') {
+    current[kind] = attitudinalValueFromCode(value);
+  } else {
+    current[kind] = value === '' ? null : Number(value);
+  }
   const payload = {
     student_id: Number(studentId),
     course_subject_id: state.currentCourseSubjectId,
@@ -694,11 +798,39 @@ async function studentLookup() {
   const courseName = dom.studentCourseFilter.value || null;
   if (!query) return toast('Escribe un RUT, apellido o correo.');
   try {
-    const { data, error } = await state.supabase.rpc('student_search', {
+    let { data, error } = await state.supabase.rpc('student_search', {
       p_query: query,
       p_course: courseName
     });
-    if (error) throw error;
+
+    if (error) {
+      const normalized = normalizeText(query);
+      const { data: students, error: baseError } = await state.supabase
+        .from('students')
+        .select('id, rut, email, full_name');
+      if (baseError) throw error;
+      const { data: enrollments } = await state.supabase
+        .from('enrollments')
+        .select('student_id, course_id, school_year')
+        .eq('school_year', window.BIOTEC_YEAR || 2026);
+      const { data: courses } = await state.supabase.from('courses').select('id, name');
+      const courseMap = new Map((courses || []).map(c => [c.id, c.name]));
+      data = (students || []).map(st => {
+        const enr = (enrollments || []).find(e => e.student_id === st.id);
+        return {
+          student_id: st.id,
+          full_name: st.full_name,
+          rut: st.rut,
+          email: st.email,
+          course_name: courseMap.get(enr?.course_id) || ''
+        };
+      }).filter(item => {
+        const blob = normalizeText(`${item.full_name} ${item.rut} ${item.email} ${item.course_name}`);
+        const courseOk = !courseName || item.course_name === courseName;
+        return courseOk && blob.includes(normalized);
+      }).slice(0, 40);
+    }
+
     state.studentSearchResults = data || [];
     renderStudentSearchResults();
     if (!state.studentSearchResults.length) {
@@ -728,11 +860,77 @@ dom.studentLookupResults.addEventListener('click', async (ev) => {
 
 async function openStudentReport(studentId) {
   try {
-    const { data, error } = await state.supabase.rpc('student_full_report', {
+    let { data, error } = await state.supabase.rpc('student_full_report', {
       p_student_id: studentId,
       p_school_year: window.BIOTEC_YEAR || 2026
     });
-    if (error) throw error;
+
+    if (error) {
+      const year = window.BIOTEC_YEAR || 2026;
+      const [{ data: student }, { data: enrollments }, { data: courseSubjects }, { data: assessments }, { data: scores }, { data: notes }, { data: subjects }, { data: courses }] = await Promise.all([
+        state.supabase.from('students').select('id, full_name, rut, email').eq('id', studentId).maybeSingle(),
+        state.supabase.from('enrollments').select('student_id, course_id, school_year').eq('student_id', studentId).eq('school_year', year),
+        state.supabase.from('course_subjects').select('id, course_id, subject_id, active').eq('active', true),
+        state.supabase.from('assessments').select('*'),
+        state.supabase.from('assessment_scores').select('*').eq('student_id', studentId),
+        state.supabase.from('subject_notes').select('*').eq('student_id', studentId),
+        state.supabase.from('subjects').select('id, name'),
+        state.supabase.from('courses').select('id, name')
+      ]);
+      const enr = (enrollments || [])[0];
+      const courseMap = new Map((courses || []).map(c => [c.id, c.name]));
+      const subjectMap = new Map((subjects || []).map(s => [s.id, s.name]));
+      const csRows = (courseSubjects || []).filter(cs => cs.course_id === enr?.course_id);
+      const dataRows = [];
+      for (const cs of csRows) {
+        const relatedAssessments = (assessments || []).filter(a => a.course_subject_id === cs.id).sort((a,b) => a.slot - b.slot);
+        const note = (notes || []).find(n => n.course_subject_id === cs.id);
+        if (!relatedAssessments.length) {
+          dataRows.push({
+            full_name: student?.full_name,
+            rut: student?.rut,
+            email: student?.email,
+            course_name: courseMap.get(enr?.course_id) || '',
+            semester: note?.semester || 1,
+            subject_name: subjectMap.get(cs.subject_id) || 'Asignatura',
+            assessment_title: null,
+            weight_pct: null,
+            requirement_pct: null,
+            total_points: null,
+            passing_points: null,
+            obtained_points: null,
+            calculated_grade: null,
+            procedural_grade: note?.procedural_grade ?? null,
+            attitudinal_grade: note?.attitudinal_grade ?? null,
+            observation: note?.observation ?? null,
+          });
+        }
+        for (const a of relatedAssessments) {
+          const score = (scores || []).find(s => s.assessment_id === a.id);
+          const noteForSemester = (notes || []).find(n => n.course_subject_id === cs.id && n.semester === a.semester) || note;
+          dataRows.push({
+            full_name: student?.full_name,
+            rut: student?.rut,
+            email: student?.email,
+            course_name: courseMap.get(enr?.course_id) || '',
+            semester: a.semester,
+            subject_name: subjectMap.get(cs.subject_id) || 'Asignatura',
+            assessment_title: a.title,
+            weight_pct: a.weight_pct,
+            requirement_pct: a.requirement_pct,
+            total_points: a.total_points,
+            passing_points: (Number(a.total_points || 0) * Number(a.requirement_pct || 0)) / 100,
+            obtained_points: score?.obtained_points ?? null,
+            calculated_grade: Number.isFinite(Number(score?.calculated_grade)) ? Number(score.calculated_grade) : gradeFromPoints(score?.obtained_points, a.total_points, a.requirement_pct),
+            procedural_grade: noteForSemester?.procedural_grade ?? null,
+            attitudinal_grade: noteForSemester?.attitudinal_grade ?? null,
+            observation: noteForSemester?.observation ?? null,
+          });
+        }
+      }
+      data = dataRows;
+    }
+
     renderStudentReport(data || []);
   } catch (error) {
     console.error(error);
@@ -768,14 +966,14 @@ function renderStudentReport(rows) {
       if (Number.isFinite(Number(attitudinal))) noteAct.push(Number(attitudinal));
       const integral = integralAverage(academic, procedural, attitudinal);
       return `
-        <article class="subject-card">
+        <article class="subject-card ${subjectToneClass(subjectName)}">
           <div class="subject-head">
             <div>
-              <h4>${subjectName}</h4>
+              <h4>${subjectEmoji(subjectName)} ${subjectName}</h4>
               <div class="subject-metrics">
                 <span class="badge ${academic >= 4 ? 'ok' : 'warn'}">Prom. académico: ${academic ? academic.toFixed(1) : '—'}</span>
                 <span class="badge neutral">Procedimental: ${procedural ? Number(procedural).toFixed(1) : '—'}</span>
-                <span class="badge neutral">Actitudinal: ${attitudinal ? Number(attitudinal).toFixed(1) : '—'}</span>
+                <span class="badge neutral">Actitudinal: ${attitudinalCodeFromValue(attitudinal) || '—'}${attitudinal ? ` (${Number(attitudinal).toFixed(1)})` : ''}</span>
                 <span class="badge ${integral >= 4 ? 'ok' : 'warn'}">Integral: ${integral ? integral.toFixed(1) : '—'}</span>
               </div>
             </div>
